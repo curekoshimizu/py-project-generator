@@ -1,4 +1,7 @@
+mod python_project;
 use clap::{Parser, Subcommand};
+use std::io;
+use std::path::Path;
 
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
@@ -21,14 +24,19 @@ enum SubCommand {
 #[derive(Parser, Debug)]
 struct NewCommand {
     project_name: String,
+
+    author: String,
 }
 
-fn main() {
+fn main() -> Result<(), io::Error> {
     let args: Args = Args::parse();
 
     match args.subcmd {
         SubCommand::New(t) => {
-            dbg!(t.project_name);
+            let project_name = Path::new(&t.project_name);
+            python_project::setup(project_name, &t.author)?
         }
     }
+
+    Ok(())
 }
