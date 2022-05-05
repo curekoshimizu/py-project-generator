@@ -5,6 +5,7 @@ use std::fs::File;
 use std::fs::OpenOptions;
 use std::io;
 use std::io::Write;
+use std::os::unix::fs::OpenOptionsExt;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -73,6 +74,14 @@ warn_unused_configs = True
 warn_unused_ignores = True
 "#
     .to_owned();
+    static ref LINT_BASH: String = r#"#!/bin/bash
+
+poetry run black .
+poetry run isort -y
+poetry run flake8 .
+poetry run mypy .
+"#
+    .to_owned();
 }
 
 pub fn setup(target_dir: &Path, author: &str) -> Result<(), io::Error> {
@@ -87,6 +96,7 @@ pub fn setup(target_dir: &Path, author: &str) -> Result<(), io::Error> {
 
     setup_pyproject_toml(target_dir, project_name, author)?;
     make_file(&target_dir.join("setup.cfg"), &SETUP_CFG)?;
+    make_executable_file(&target_dir.join("lint.bash"), &LINT_BASH)?;
 
     Ok(())
 }
@@ -110,6 +120,23 @@ fn make_file(path: &PathBuf, body: &String) -> Result<(), io::Error> {
     }
 
     let file = OpenOptions::new().write(true).create(true).open(path)?;
+
+    let mut f = io::BufWriter::new(file);
+    write!(f, "{}", body)?;
+
+    Ok(())
+}
+
+fn make_executable_file(path: &PathBuf, body: &String) -> Result<(), io::Error> {
+    if path.exists() {
+        return Ok(());
+    }
+
+    let file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .mode(0o770)
+        .open(path)?;
 
     let mut f = io::BufWriter::new(file);
     write!(f, "{}", body)?;
