@@ -20,10 +20,10 @@ authors = ["__AUTHOR__"]
 python = ">=3.8,<4"
 
 [tool.poetry.dev-dependencies]
-black = "^20.8b1"
-flake8 = "^3.8.4"
-isort = "^4.3.20"
-mypy = "^0.910"
+black = "^22.3.0"
+flake8 = "^4.0.1"
+isort = "^5.10.1"
+mypy = "^0.950"
 pytest = "^6.2.1"
 ipdb = "^0.13.4"
 
@@ -77,7 +77,7 @@ warn_unused_ignores = True
     static ref LINT_BASH: String = r#"#!/bin/bash
 
 poetry run black .
-poetry run isort -y
+poetry run isort .
 poetry run flake8 .
 poetry run mypy .
 "#
@@ -97,6 +97,15 @@ pub fn setup(target_dir: &Path, author: &str) -> Result<(), io::Error> {
     setup_pyproject_toml(target_dir, project_name, author)?;
     make_file(&target_dir.join("setup.cfg"), &SETUP_CFG)?;
     make_executable_file(&target_dir.join("lint.bash"), &LINT_BASH)?;
+
+    // make .gitignore
+    let resp = reqwest::blocking::get(
+        "https://raw.githubusercontent.com/github/gitignore/main/Python.gitignore",
+    )
+    .unwrap() // FIXME
+    .text()
+    .unwrap(); // FIXME
+    make_file(&target_dir.join(".gitignore"), &resp)?;
 
     Ok(())
 }
